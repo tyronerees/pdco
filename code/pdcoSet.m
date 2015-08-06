@@ -125,7 +125,14 @@ function options = pdcoSet(opts)
   options.LSMRatol2    = 1e-15;  % 
   options.LSMRconlim   = 1e+12;  % Somewhere between e+8 and e+16
   options.wait         =     0;
-  options.NOTE         = 'LSMRMaxIter is scaled by the matrix dimension';
+  options.NOTE         = ['LSMRMaxIter is scaled by the matrix ' ...
+                      'dimension'];
+  
+  % added by T.Rees for pp code....
+  options.pp = 0;
+  options.gamma = 1e-5; % scaling for the post processing...
+  options.precond_method = 1; % default to aug lag
+  options.krylov_method = 1;% Krylov method for options.method = 23
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % End default options.

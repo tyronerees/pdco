@@ -1,4 +1,4 @@
-function [x,y,z,inform,PDitns,CGitns,time] = ...
+function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
     pdco(pdObj,pdMat,b,bl,bu,d1,d2,options,x0,y0,z0,xsize,zsize)
 
 %-----------------------------------------------------------------------
@@ -297,6 +297,8 @@ function [x,y,z,inform,PDitns,CGitns,time] = ...
   nb     = n + m;
   CGitns = 0;
   inform = 0;
+  itnm = 0;
+  solve_extras = [];
   % 07 Aug 2003: No need for next lines.
   %if length(d1)==1, d1 = d1*ones(n,1); end   % Allow scalar d1, d2
   %if length(d2)==1, d2 = d2*ones(m,1); end   % to mean d1*e, d2*e
@@ -319,7 +321,11 @@ function [x,y,z,inform,PDitns,CGitns,time] = ...
   atol1     = options.LSMRatol1;  % Initial  atol
   atol2     = options.LSMRatol2;  % Smallest atol, unless atol1 is smaller
   conlim    = options.LSMRconlim;
-
+  krylov_method = options.krylov_method;
+  premeth = options.precond_method;
+  
+  CGitnsvec = zeros(maxitn,1);
+  
   if Method==0
      if explicitA, Method = 1; else Method = 3; end
   end
@@ -385,7 +391,7 @@ function [x,y,z,inform,PDitns,CGitns,time] = ...
   end
 
   diagHess   = Method<=5;
-  squareHess = Method==21 || Method==22;
+  squareHess = Method>20;
 
   switch Method
   case 1
@@ -398,10 +404,10 @@ function [x,y,z,inform,PDitns,CGitns,time] = ...
     solver  = 'MINRES';  head3 = '  atol MINRES Inexact'; 
 % case 5    
 %   solver  = '   PCG';  head3 = '  atol    PCG Inexact'; 
-  case {21, 22}
+  case {21, 22, 224, 225, 23}
     solver  = '   SQD';  head3 = '      SQD';
   otherwise
-    error('Method must be 1, 2, 3, 4 or 21')
+    error('Method must be 1, 2, 3, 4, 21, 22, 224, 225, or 23')
   end
     
   %---------------------------------------------------------------------
@@ -607,8 +613,8 @@ function [x,y,z,inform,PDitns,CGitns,time] = ...
     %              Now that starting conditions are better, go back to 0.1.
 
     r3norm = max([Pinf  Dinf  Cinf]);
-    atol   = min([atol  r3norm*0.1]);
-    atol   = max([atol  atolmin   ]);
+    atol   = min([atol  r3norm*0.1]); 
+    atol   = max([atol  atolmin   ]); 
     btol   = atol;
 
     if Method<=5  %%% diagHess
@@ -792,7 +798,7 @@ function [x,y,z,inform,PDitns,CGitns,time] = ...
     end % if Method<=5
 
 
-    if Method==21 || Method==22
+    if squareHess %Method==21 || Method==22
       % ---------------------------------------------------------
       % Use SQD method to get dy and dx 
       % ---------------------------------------------------------
@@ -859,9 +865,62 @@ function [x,y,z,inform,PDitns,CGitns,time] = ...
               error('[L,D,P,S] = ldl(K,0) gave non-diagonal D')
           end
           sqdsoln = S*(P*(L'\(D\(L\(P'*(S*rhs))))));
+          
+          
+        case 224
+          % use backslash
+          sqdsoln = K\rhs;
+        case 225
+          % use backslash, and then perturb
+          sqdsoln = K\rhs;
+          sqdsoln = sqdsoln + 1e-12*randn(size(rhs));
+          
+        case 23
+          % use a krylov method on the indefinite system
+          options.conv_data.x_max = norm(x,1);
+          options.conv_data.z_max = norm(grad + (d1.^2).*x - r2,1);
+          options.conv_data.mu = mu;
+          [sqdsoln,itnm,normr,solve_extras] = ...
+              krylov_solve(K,rhs,n,m,atol,itnlim,krylov_method,premeth,...
+                           options.conv_data);
+          if exist('solve_extras.denom')
+              fprintf('denom = %f',solve_extras.denom)
+          end
+          atolold = atol;
+          r3ratio = normr/fmerit;
+          CGitns  = CGitns + itnm;
+          
       end
       dx  = sqdsoln(1:n);
       dy  = sqdsoln(n+1:n+m); 
+                  
+      
+      %!!!!!!!!!!!!!!!!
+      % collect data
+      %!!!!!!!!!!!!!!!!
+      
+      extras.residual(PDitns) = norm(rhs - K*sqdsoln);
+      extras.RelRes(PDitns) = extras.residual(PDitns)/norm(rhs);
+      extras.constraint_violation(PDitns) = ...
+          norm(K(n+1:n+m,1:n)*sqdsoln(1:n) - rhs(n+1:n+m));
+      extras.Lagrangian(PDitns) = 0.5*dx'*(K(1:n,1:n)*dx)...
+                          - dx'*rhs(1:n)...
+                          - dy'*(K(n+1:n+m,1:n)*dx - rhs(n+1:n+m));
+      % collect data from the convergence of the ip method....
+      extras.primalfeas(PDitns) = Pinf;
+      extras.dualfeas(PDitns) = Dinf;
+      extras.complementray(PDitns) =  Cinf0; 
+      extras.KrylovIterations(PDitns) = itnm; 
+      % some extra info...
+      extras.mu(PDitns) = mu;
+      extras.solvedata{PDitns} = solve_extras;
+      
+      
+      %!!!!!!!!!!!!!!!!!!!!!!!!
+      % end of data collection
+      %!!!!!!!!!!!!!!!!!!!!!!!!
+
+      
       dx1(low)  = - rL(low) + dx(low);
       dx2(upp)  = - rU(upp) - dx(upp);
       dz1(low)  =  (cL(low) - z1(low).*dx1(low)) ./ x1(low);
@@ -985,7 +1044,19 @@ function [x,y,z,inform,PDitns,CGitns,time] = ...
     complementary = Cinf0 <=  opttol;
     enough        = PDitns>=       4;  % Prevent premature termination.
     converged     = primalfeas  &  dualfeas  &  complementary  &  enough;
-
+    
+    %!!!!!!!!!!!!!!!!%
+    %! collect data !%
+    %!!!!!!!!!!!!!!!!%
+    
+    extras.primalfeas(PDitns) = Pinf;
+    extras.dualfeas(PDitns) = Dinf;
+    extras.complementray(PDitns) =  Cinf0; 
+    
+    %!!!!!!!!!!!!!!!!!!!!!!!!
+    % end of data collection
+    %!!!!!!!!!!!!!!!!!!!!!!!!
+    
     %-------------------------------------------------------------------
     % Iteration log.
     %-------------------------------------------------------------------
@@ -1019,6 +1090,8 @@ function [x,y,z,inform,PDitns,CGitns,time] = ...
           if PDitns==1, fprintf(' %8g x2', nnz(L)); end
       elseif Method==22
           if PDitns==1, fprintf(' %8g', nnz(L)); end
+      elseif Method==23 
+          fprintf(' %5.1f%7g%7.3f', log10(atolold), itnm, r3ratio)
       else
         %relax
       end
