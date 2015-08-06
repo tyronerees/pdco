@@ -613,8 +613,8 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
     %              Now that starting conditions are better, go back to 0.1.
 
     r3norm = max([Pinf  Dinf  Cinf]);
-    atol   = min([atol  r3norm*0.1]); 
-    atol   = max([atol  atolmin   ]); 
+    %    atol   = min([atol  r3norm*0.1]); 
+    %    atol   = max([atol  atolmin   ]); 
     btol   = atol;
 
     if Method<=5  %%% diagHess
@@ -791,7 +791,7 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
       if Method==3 || Method==4 || Method==5
          if atol > atolmin
             if r3ratio >= 0.001     % Accept dy but make next one more accurate.
-               atol = atol*0.1;
+                     % atol = atol*0.1;
             end
          end
       end
@@ -1170,8 +1170,8 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
 
 
       if nf > 2  ||  step <= 0.01
-        atol = atolold*0.1;
-        btol = atol;
+          %atol = atolold*0.1;
+          %btol = atol;
       end
     end
   end
