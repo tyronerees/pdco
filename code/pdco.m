@@ -1143,7 +1143,6 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
       % mutrad = mu0*(sum(Xz)/n); % 24 May 1998: Traditional value, but
       % mu     = min(mu,mutrad ); % it seemed to decrease mu too much.
 
-      mu      = max(mu,mulast);  % 13 Jun 1998: No need for smaller mu.
       [cL,cU,center,Cinf,Cinf0] = ...
                pdxxxresid2( mu,low,upp,cL,cU,x1,x2,z1,z2 );
       fmerit = pdxxxmerit( low,upp,r1,r2,rL,rU,cL,cU );
