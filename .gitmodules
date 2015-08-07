@@ -1,0 +1,3 @@
+[submodule "code/krylov_solvers"]
+	path = code/krylov_solvers
+	url = https://github.com/tyronerees/krylov_solvers.git
