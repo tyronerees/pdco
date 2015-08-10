@@ -762,7 +762,7 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         end
 
         [dy, istop_minres, itnm, normr, normAr, normA, condA, normx] = ...
-            minres( mat_minres_handle, rhs, pdDDD3, damp, show, check, itnlim, atol );
+            pdco_minres( mat_minres_handle, rhs, pdDDD3, damp, show, check, itnlim, atol );
 
         if istop_minres==-1 || istop_minres==5 || istop_minres==6   % conlim or itnlim
             fprintf('\n    MINRES stopped early:  istop = %3d', istop_minres)
