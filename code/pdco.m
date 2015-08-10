@@ -636,6 +636,10 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
       %-----------------------------------------------------------------
       
       % For these methods to work, H must be diagonal 
+      if nnz(H) > length(H)
+          fprintf('WARNING! \n\n')          
+          fprintf('Method <=5 only works for diagonal H\n')
+      end
       H(low)  = H(low) + z1(low)./x1(low);
       H(upp)  = H(upp) + z2(upp)./x2(upp);
       w       = r2;
