@@ -799,13 +799,14 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
             wD     = full(wD) + d2.^2;   % dense
             pdDDD3 = 1./wD;  % Cast the vector into a diagonal operator
             pdDDD3 = @(x)(pdDDD3.*x);
+            [dy,itnm,normr] = preconjgrad(mat_cg_handle,rhs,itnlim, ...
+                                      zeros(size(rhs)),atol,pdDDD3);
         else
             precon = false;
+            [dy,itnm,normr] = preconjgrad(mat_cg_handle,rhs,itnlim, ...
+                                      zeros(size(rhs)),atol,speye(m));
             pdDDD3 = [];
         end
-
-        [dy,itnm,normr] = preconjgrad(mat_cg_handle,rhs,itnlim, ...
-                                      zeros(size(rhs)),atol,speye(m));%pdDDD3);
 
         atolold = atol;
         r3ratio = normr(itnm+1)/fmerit; 
