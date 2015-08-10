@@ -402,12 +402,12 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
     solver  = '  LSMR';  head3 = '  atol   LSMR Inexact';
   case 4    
     solver  = 'MINRES';  head3 = '  atol MINRES Inexact'; 
-% case 5    
-%   solver  = '   PCG';  head3 = '  atol    PCG Inexact'; 
+  case 5    
+    solver  = '   PCG';  head3 = '  atol    PCG Inexact'; 
   case {21, 22, 224, 225, 23}
     solver  = '   SQD';  head3 = '      SQD';
   otherwise
-    error('Method must be 1, 2, 3, 4, 21, 22, 224, 225, or 23')
+    error('Method must be 1, 2, 3, 4, 5, 21, 22, 224, 225, or 23')
   end
     
   %---------------------------------------------------------------------
@@ -672,6 +672,7 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         rhs   = pdMat*(H.*w) + r1;
         dy    = R \ (R'\rhs(P));
         dy(P) = dy;
+        extras.residual(PDitns) = norm(rhs - ADDA*dy);
       
       elseif Method==2
         % --------------------------------------------------------------
@@ -694,6 +695,8 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         dy      = R \ rhs;
         dy(P)   = dy;
 
+        extras.residual(PDitns) = norm(rhs - DAt'*(DAt*dy));
+        
       elseif Method==3
         % --------------------------------------------------------------
         % Method=3.  Use LSMR (iterative solve) to get dy
@@ -737,7 +740,9 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         atolold   = atol;
         r3ratio   = normAr/fmerit;
         CGitns    = CGitns + itncg;
-      
+        
+        extras.residual(PDitns) = normr;
+        
       elseif Method ==4
         % --------------------------------------------------------------
         % Method=4.  Use MINRES (iterative solve) to get dy.
@@ -772,12 +777,42 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         r3ratio = normr/fmerit; 
         CGitns  = CGitns + itnm;
 
+        extras.residual(PDitns) = normr;
+        
       elseif Method==5
         % --------------------------------------------------------------
         % Method=5.  Use PCG (iterative solve) to get dy.
         % --------------------------------------------------------------
-        error('PCG not implemented yet')
+        %        error('PCG not implemented yet')
+             
+        rhs    = pdxxxmat(pdMat,1,m,n,H.*w) + r1;
+        damp   = 0;
+        check  = 0;
+        mat_cg_handle = @(x) pdxxxminresmat( m, n, x, pdMat, Method, H, d2 );
 
+        if explicitA  % A is a sparse matrix.
+                      % Construct diagonal preconditioner for MINRES
+            precon = true;
+            AD     = pdMat*diag(sparse(D));
+            AD     = AD.^2;
+            wD     = sum(AD,2);          % sparse
+            wD     = full(wD) + d2.^2;   % dense
+            pdDDD3 = 1./wD;  % Cast the vector into a diagonal operator
+            pdDDD3 = @(x)(pdDDD3.*x);
+        else
+            precon = false;
+            pdDDD3 = [];
+        end
+
+        [dy,itnm,normr] = preconjgrad(mat_cg_handle,rhs,itnlim, ...
+                                      zeros(size(rhs)),atol,speye(m));%pdDDD3);
+
+        atolold = atol;
+        r3ratio = normr(itnm+1)/fmerit; 
+        CGitns  = CGitns + itnm;
+
+        extras.residual(PDitns) = normr(itnm+1);
+        
       end % computation of dy
 
       % dy is now known.  Get dx, dx1, dx2, dz1, dz2.
@@ -799,6 +834,32 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
             end
          end
       end
+      
+      %!!!!!!!!!!!!!!!!
+      % collect data
+      %!!!!!!!!!!!!!!!!
+      
+      extras.RelRes(PDitns) = extras.residual(PDitns)/norm(rhs);
+      extras.constraint_violation(PDitns) = 1000000;
+      extras.Lagrangian(PDitns) = 1000000;
+      %0.5*dx'*(H\dx)...
+      %                    - dx'*rhs(1:n)...
+      %                    - dy'*(K(n+1:n+m,1:n)*dx - rhs(n+1:n+m));
+      % collect data from the convergence of the ip method....
+      extras.primalfeas(PDitns) = Pinf;
+      extras.dualfeas(PDitns) = Dinf;
+      extras.complementray(PDitns) =  Cinf0; 
+      extras.KrylovIterations(PDitns) = itnm; 
+      % some extra info...
+      extras.mu(PDitns) = mu;
+      extras.solvedata{PDitns} = solve_extras;
+      
+      
+      %!!!!!!!!!!!!!!!!!!!!!!!!
+      % end of data collection
+      %!!!!!!!!!!!!!!!!!!!!!!!!
+
+      
     end % if Method<=5
 
 
@@ -1397,13 +1458,13 @@ function y = pdxxxminresmat( m, n, x, pdMat, Method, H, d2 )
 % 04 Apr 2012: First version to go with pdco.m and minres.m.
 %-----------------------------------------------------------------------
 
-  if Method==4  % The operator M is [ A H A' + D2^2 ].
+  if Method== 4|| Method==5  % The operator M is [ A H A' + D2^2 ].
       t = pdxxxmat( pdMat, 2, m, n, x );   % Ask 'aprod' to form t = A'x.
       t = t.*H;
       y = pdxxxmat( pdMat, 1, m, n, t );   %Ask 'aprod' to form y = At;
       y = y + (d2.^2).*x;
   else
-      error('Error in pdxxxminresmat: Only Method 4 is allowed at present')
+      error('Error in pdxxxminresmat: Only Method 4 or 5 are allowed at present')
   end
 %-----------------------------------------------------------------------
 % End private function pdxxxminresmat
