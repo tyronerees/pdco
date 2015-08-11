@@ -37,7 +37,7 @@ switch pre.number
   case 4
     % constraint preconditioner
     pre.P = K;
-    pre.P(one,one) = speye(n,n);%diag(diag(K(one,one)));
+    pre.P(one,one) = diag(diag(K(one,one)));
   case 5
     % a simple diagonal preconditioner...
     d = diag(K(one,one));
