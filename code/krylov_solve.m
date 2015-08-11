@@ -1,9 +1,11 @@
 function [x,its,normr,data] = krylov_solve(A,b,n,m,tol,maxits,krylov_method,premeth,conv_data)
 % Pick a krylov method....
 
+%!! add this option later....
 const = sqrt(2)*conv_data.z_max + conv_data.max_sigma* ...
         conv_data.x_max;
-newtol = tol*((conv_data.mu)^0.5)/const
+newtol = tol*((conv_data.mu)^0.5)/const;
+%!!
 
 
 switch krylov_method
@@ -43,7 +45,7 @@ switch krylov_method
     indef_pre = @(x) minres_preconditioner(x,predata);
         
     [x,normr,its,resvec]=...
-        mpgmres(-A,-b,{indef_pre},'trunc',newtol,maxits);
+        mpgmres(-A,-b,{indef_pre},'trunc',tol,maxits);
     data.resvec = resvec;
     data.denom = const;
     data.tol = newtol;
