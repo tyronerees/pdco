@@ -236,6 +236,8 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
   m = length(b);
   n = length(bl);
 
+  one = 1:n; two = n+1:n+m;
+  
 
   %---------------------------------------------------------------------
   % Decode pdObj.
@@ -521,7 +523,7 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
   if diagHess
      H = H + (d1.^2);                     % H    includes x regularization.
   else
-     H = H + sparse(1:n,1:n,(d1.^2),n,n); % H    includes x regularization.
+     H = H + sparse(one,one,(d1.^2),n,n); % H    includes x regularization.
   end
 
   %---------------------------------------------------------------------
@@ -656,7 +658,7 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         % --------------------------------------------------------------
         % Use chol to get dy
         % -------------------
-        AD   = pdMat*sparse( 1:n, 1:n, D, n, n );
+        AD   = pdMat*sparse( one, one, D, n, n );
         ADDA = AD*AD' + sparse( 1:m, 1:m, (d2.^2), m, m );
         if PDitns==1, P = symamd(ADDA); end % Do ordering only once.
 
@@ -678,7 +680,7 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         % --------------------------------------------------------------
         % Use QR to get dy
         % --------------------------------------------------------------
-        DAt  = sparse( 1:n, 1:n, D, n, n )*(pdMat');
+        DAt  = sparse( one, one, D, n, n )*(pdMat');
         if PDitns==1, P = colamd(DAt); end % Do ordering only once.
 
         if length(d2)==1
@@ -957,9 +959,13 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
           CGitns  = CGitns + itnm;
           
       end
-      dx  = sqdsoln(1:n);
-      dy  = sqdsoln(n+1:n+m); 
+      dx  = sqdsoln(one);
+      dy  = sqdsoln(two); 
                   
+      
+      % let's calculate the residual in the 'right' norm...
+      
+      
       
       %!!!!!!!!!!!!!!!!
       % collect data
@@ -968,10 +974,10 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
       extras.residual(PDitns) = norm(rhs - K*sqdsoln);
       extras.RelRes(PDitns) = extras.residual(PDitns)/norm(rhs);
       extras.constraint_violation(PDitns) = ...
-          norm(K(n+1:n+m,1:n)*sqdsoln(1:n) - rhs(n+1:n+m));
-      extras.Lagrangian(PDitns) = 0.5*dx'*(K(1:n,1:n)*dx)...
-                          - dx'*rhs(1:n)...
-                          - dy'*(K(n+1:n+m,1:n)*dx - rhs(n+1:n+m));
+          norm(K(two,one)*sqdsoln(one) - rhs(two));
+      extras.Lagrangian(PDitns) = 0.5*dx'*(K(one,one)*dx)...
+                          - dx'*rhs(one)...
+                          - dy'*(K(two,one)*dx - rhs(two));
       % collect data from the convergence of the ip method....
       extras.primalfeas(PDitns) = Pinf;
       extras.dualfeas(PDitns) = Dinf;
@@ -1049,7 +1055,7 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
       if diagHess
          H = H + (d1.^2);                     % H    includes x regularization.
       else
-         H = H + sparse(1:n,1:n,(d1.^2),n,n); % H    includes x regularization.
+         H = H + sparse(one,one,(d1.^2),n,n); % H    includes x regularization.
       end
 
       [r1,r2,rL,rU,Pinf,Dinf] = ...
@@ -1434,9 +1440,9 @@ function y = pdxxxlsmrmat( mode, m, n, x, pdMat, Method, ...
       y = [ (pdDDD1.*t); (d2.*x) ];
 
     else
-      t = pdDDD1.*x(1:n);
+      t = pdDDD1.*x(one);
       y = pdxxxmat( pdMat, 1, m, n, t );   % Ask 'aprod' to form y = A t.
-      y = y + d2.*x(n+1:n+m);
+      y = y + d2.*x(two);
       if precon, y = pdDDD3.*y; end
     end
 
