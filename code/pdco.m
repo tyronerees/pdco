@@ -961,11 +961,6 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
       end
       dx  = sqdsoln(one);
       dy  = sqdsoln(two); 
-                  
-      
-      % let's calculate the residual in the 'right' norm...
-      
-      
       
       %!!!!!!!!!!!!!!!!
       % collect data
@@ -986,7 +981,28 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
       % some extra info...
       extras.mu(PDitns) = mu;
       extras.solvedata{PDitns} = solve_extras;
-      
+
+            % let's calculate the error in the 'right' norm...
+      if options.CalculateError
+          sqdsoln_exact = K\rhs;
+          ErrorVector = sqdsoln_exact - sqdsoln;
+          perr = ErrorVector(one);
+          derr = ErrorVector(two);
+          extras.PrimalErrorN(PDitns) = sqrt(-perr'*(K(one,one)*perr));
+          Bderr = K(one,two)*derr;
+          KBderr = Bderr;
+          %      extras.DualErrorN(PDitns) = sqrt(-Bderr'*(K(one,one)\Bderr));
+          for i = 1:n
+              if abs(K(i,i)) > 1e-30
+                  KBderr(i) = -Bderr(i)*(K(i,i)^-0.5);
+              end
+          end
+          extras.DualErrorN(PDitns) = sqrt(KBderr'*KBderr);
+          extras.ErrorNorm(PDitns) = ...
+              sqrt(extras.PrimalErrorN(PDitns)^2 ...
+                   + extras.DualErrorN(PDitns)^2 );
+          extras.Error(PDitns) = norm(ErrorVector);
+      end
       
       %!!!!!!!!!!!!!!!!!!!!!!!!
       % end of data collection
@@ -1320,6 +1336,14 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
                PDitns,solver,CGitns,time);
     pdxxxdistrib( abs(x),abs(z) );   % Private function
     toc
+    if options.CalculateError
+        fprintf('\n################################\n')
+        fprintf('##       W A R N I N G        ##\n')
+        fprintf('## options.CalculateError = T ##\n')
+        fprintf('## Do not use timings         ##\n')
+        fprintf('################################\n')
+    end      
+
     if wait
       keyboard
     end
@@ -1395,6 +1419,7 @@ function pdxxxdistrib( x,z )
   end
 
   disp(' ')
+  
 %-----------------------------------------------------------------------
 % End private function pdxxxdistrib
 %-----------------------------------------------------------------------

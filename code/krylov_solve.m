@@ -4,7 +4,8 @@ function [x,its,normr,data] = krylov_solve(A,b,n,m,tol,maxits,krylov_method,prem
 %!! add this option later....
 const = sqrt(2)*conv_data.z_max + conv_data.max_sigma* ...
         conv_data.x_max;
-newtol = tol*((conv_data.mu)^0.5)/const;
+%newtol = tol*((conv_data.mu)^0.5)/const;
+newtol = tol;
 %!!
 
 

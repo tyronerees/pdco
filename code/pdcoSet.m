@@ -133,6 +133,7 @@ function options = pdcoSet(opts)
   options.gamma = 1e-5; % scaling for the post processing...
   options.precond_method = 1; % default to aug lag
   options.krylov_method = 1;% Krylov method for options.method = 23
+  options.CalculateError = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % End default options.
