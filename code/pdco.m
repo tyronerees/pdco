@@ -856,7 +856,9 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
       % some extra info...
       extras.mu(PDitns) = mu;
       extras.solvedata{PDitns} = solve_extras;
-      
+      if options.CalculateError
+         fprintf('Sorry, calculate error not available for ne yet...\n')
+      end
       
       %!!!!!!!!!!!!!!!!!!!!!!!!
       % end of data collection
