@@ -856,8 +856,47 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
       % some extra info...
       extras.mu(PDitns) = mu;
       extras.solvedata{PDitns} = solve_extras;
+      
       if options.CalculateError
-         fprintf('Sorry, calculate error not available for ne yet...\n')
+          %         fprintf(['Sorry, calculate error not available for ne ' ...
+          %        'yet...\n'])
+          
+          % generate ADDA...
+          AD   = pdMat*sparse( one, one, D, n, n );
+          ADDA = AD*AD' + sparse( 1:m, 1:m, (d2.^2), m, m );
+          if PDitns==1, P = symamd(ADDA); end % Do ordering only once.
+          
+          [R,indef] = chol(ADDA(P,P));
+          if indef
+              fprintf('\n\n   chol says AD^2A'' is not pos def')
+              fprintf('\n   Use bigger d2, or set options.Method = 2 or 3')
+              inform = 4;
+              break
+          end
+
+          % dy = ADDA \ rhs;
+          rhs   = pdMat*(H.*w) + r1;
+          dy_exact    = R \ (R'\rhs(P));
+          dy_exact(P) = dy_exact;
+          
+          
+          derr = dy_exact - dy;
+          
+% $$$           Bderr = pdMat*derr;
+% $$$           KBderr = Bderr;
+% $$$           %      extras.DualErrorN(PDitns) = sqrt(-Bderr'*(K(one,one)\Bderr));
+% $$$           for i = 1:n
+% $$$               if abs(K(i,i)) > 1e-30
+% $$$                   KBderr(i) = -Bderr(i)*(D);
+% $$$               end
+% $$$           end
+
+          KBderr = AD'*derr;
+
+          extras.DualErrorN(PDitns) = sqrt(KBderr'*KBderr);
+          extras.ErrorNorm(PDitns) = extras.DualErrorN(PDitns);
+          extras.Error(PDitns) = norm(extras.DualErrorN(PDitns));
+         
       end
       
       %!!!!!!!!!!!!!!!!!!!!!!!!
