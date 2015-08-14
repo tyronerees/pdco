@@ -1,13 +1,5 @@
-function [x,its,normr,data] = krylov_solve(A,b,n,m,tol,maxits,krylov_method,premeth,conv_data)
+function [x,its,normr,data] = krylov_solve(A,b,n,m,tol,maxits,krylov_method,premeth)
 % Pick a krylov method....
-
-%!! add this option later....
-const = sqrt(2)*conv_data.z_max + conv_data.max_sigma* ...
-        conv_data.x_max;
-%newtol = tol*((conv_data.mu)^0.5)/const;
-newtol = tol;
-%!!
-
 
 switch krylov_method
   case 1 % Saunders' MINRES implementation
@@ -49,7 +41,7 @@ switch krylov_method
         mpgmres(-A,-b,{indef_pre},'trunc',tol,maxits);
     data.resvec = resvec;
     data.denom = const;
-    data.tol = newtol;
+    data.tol = tol;
   case 5 % matlab's GMRES on the indefinite system
     predata = generate_pre(A,n,m,premeth);
     indef_pre = @(x) minres_preconditioner(x,predata);
@@ -68,11 +60,11 @@ switch krylov_method
     indef_pre = @(x) minres_preconditioner(x,predata);
           
     [x, its, resvec] = ...
-        preconjgrad(-A,-b,maxits,zeros(size(b)),newtol,indef_pre);
+        preconjgrad(-A,-b,maxits,zeros(size(b)),tol,indef_pre);
         
     normr = norm(resvec(its));
     data.resvec = resvec;
-    data.tol = newtol;
+    data.tol = tol;
   case 7 % tfqmr
     predata = generate_pre(-A,n,m,premeth);
     indef_pre = @(x) minres_preconditioner(x,predata);
@@ -134,10 +126,10 @@ switch krylov_method
     if exact
         x_ex = S\rhs;
         [sol, its, resvec] = ...
-            preconjgrad_exact(S,rhs,maxits,zeros(m,1),newtol,pre,x_ex);
+            preconjgrad_exact(S,rhs,maxits,zeros(m,1),tol,pre,x_ex);
     else
         [sol, its, resvec] = ...
-            preconjgrad(S,rhs,maxits,zeros(m,1),newtol,pre);
+            preconjgrad(S,rhs,maxits,zeros(m,1),tol,pre);
     end
 
     clear pc;

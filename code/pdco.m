@@ -990,8 +990,7 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
           options.conv_data.z_max = norm(grad + (d1.^2).*x - r2,1);
           options.conv_data.mu = mu;
           [sqdsoln,itnm,normr,solve_extras] = ...
-              krylov_solve(K,rhs,n,m,atol,itnlim,krylov_method,premeth,...
-                           options.conv_data);
+              krylov_solve(K,rhs,n,m,atol,itnlim,krylov_method,premeth)
           if exist('solve_extras.denom')
               fprintf('denom = %f',solve_extras.denom)
           end
