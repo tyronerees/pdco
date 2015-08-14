@@ -134,6 +134,7 @@ function options = pdcoSet(opts)
   options.precond_method = 1; % default to aug lag
   options.krylov_method = 1;% Krylov method for options.method = 23
   options.CalculateError = 0;
+  options.ScaleTol = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % End default options.
