@@ -603,6 +603,12 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
     end
   end
 
+  if options.ScaleTol
+      max_sigma = svds(pdMat,1); % do this once
+  end
+  
+  tol_in = atol;
+  
   %---------------------------------------------------------------------
   % Main loop.
   %---------------------------------------------------------------------
@@ -618,6 +624,16 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
     %    atol   = min([atol  r3norm*0.1]); 
     %    atol   = max([atol  atolmin   ]); 
     btol   = atol;
+    
+    if options.ScaleTol
+        x_max = norm(x,1);
+        z_max = norm(grad + (d1.^2).*x - r2,1);
+        mu = mu;
+        const = sqrt(2)*z_max + max_sigma*x_max;
+        atol = ( tol_in * mu^(0.5) ) / const;
+        extras.tol(PDitns) = atol;
+        %        atol = tol_in;
+    end
 
     if Method<=5  %%% diagHess
       %-----------------------------------------------------------------
@@ -986,9 +1002,6 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
           
         case 23
           % use a krylov method on the indefinite system
-          options.conv_data.x_max = norm(x,1);
-          options.conv_data.z_max = norm(grad + (d1.^2).*x - r2,1);
-          options.conv_data.mu = mu;
           [sqdsoln,itnm,normr,solve_extras] = ...
               krylov_solve(K,rhs,n,m,atol,itnlim,krylov_method,premeth)
           if exist('solve_extras.denom')
