@@ -632,6 +632,9 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         const = sqrt(2)*z_max + max_sigma*x_max;
         atol = ( tol_in * mu^(0.5) ) / const;
         extras.tol(PDitns) = atol;
+        extras.const(PDitns) = const;
+        extras.x_max(PDitns) = x_max;
+        extras.z_max(PDitns) = z_max;
         %        atol = tol_in;
     end
 
@@ -1003,7 +1006,7 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         case 23
           % use a krylov method on the indefinite system
           [sqdsoln,itnm,normr,solve_extras] = ...
-              krylov_solve(K,rhs,n,m,atol,itnlim,krylov_method,premeth)
+              krylov_solve(K,rhs,n,m,atol,itnlim,krylov_method,premeth);
           if exist('solve_extras.denom')
               fprintf('denom = %f',solve_extras.denom)
           end
