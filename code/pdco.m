@@ -814,20 +814,31 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         if explicitA  % A is a sparse matrix.
                       % Construct diagonal preconditioner for MINRES
             precon = true;
-            AD     = pdMat*diag(sparse(D));
-            AD     = AD.^2;
-            wD     = sum(AD,2);          % sparse
-            wD     = full(wD) + d2.^2;   % dense
-            pdDDD3 = 1./wD;  % Cast the vector into a diagonal operator
-            pdDDD3 = @(x)(pdDDD3.*x);
-            [dy,itnm,normr] = preconjgrad(mat_cg_handle,rhs,itnlim, ...
-                                      zeros(size(rhs)),atol,pdDDD3);
+            %            keyboard
+            S = sparse(pdMat*(diag(H) * pdMat'));
+            pc = hsl_mi28_precond(S);
+            pdDDD3 = @(x) pc.apply(x);
+% $$$             AD     = pdMat*diag(sparse(D));
+% $$$             AD     = AD.^2;
+% $$$             wD     = sum(AD,2);          % sparse
+% $$$             wD     = full(wD) + d2.^2;   % dense
+% $$$             pdDDD3 = 1./wD;  % Cast the vector into a diagonal operator
+% $$$             pdDDD3 = @(x)(pdDDD3.*x);
+            [dy,itnm,normr,flag] = preconjgrad(mat_cg_handle,rhs,itnlim, ...
+                                      zeros(size(rhs)),atol, ...
+                                               pdDDD3);
+            clear pc
         else
             precon = false;
-            [dy,itnm,normr] = preconjgrad(mat_cg_handle,rhs,itnlim, ...
+            [dy,itnm,normr,flag] = preconjgrad(mat_cg_handle,rhs,itnlim, ...
                                       zeros(size(rhs)),atol,speye(m));
             pdDDD3 = [];
         end
+        if flag~=0
+            fprintf('CG failed to converge to sufficient accuracy\n')
+            keyboard
+        end
+
 
         atolold = atol;
         r3ratio = normr(itnm+1)/fmerit; 
