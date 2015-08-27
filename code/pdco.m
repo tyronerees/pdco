@@ -804,7 +804,6 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         % --------------------------------------------------------------
         % Method=5.  Use PCG (iterative solve) to get dy.
         % --------------------------------------------------------------
-        %        error('PCG not implemented yet')
              
         rhs    = pdxxxmat(pdMat,1,m,n,H.*w) + r1;
         damp   = 0;
