@@ -812,33 +812,40 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         mat_cg_handle = @(x) pdxxxminresmat( m, n, x, pdMat, Method, H, d2 );
 
         if explicitA  % A is a sparse matrix.
-                      % Construct diagonal preconditioner for MINRES
-            precon = true;
-            %            keyboard
-            S = sparse(pdMat*(diag(H) * pdMat'));
-            pc = hsl_mi28_precond(S);
-            pdDDD3 = @(x) pc.apply(x);
-% $$$             AD     = pdMat*diag(sparse(D));
-% $$$             AD     = AD.^2;
-% $$$             wD     = sum(AD,2);          % sparse
-% $$$             wD     = full(wD) + d2.^2;   % dense
-% $$$             pdDDD3 = 1./wD;  % Cast the vector into a diagonal operator
-% $$$             pdDDD3 = @(x)(pdDDD3.*x);
-            [dy,itnm,normr,flag] = preconjgrad(mat_cg_handle,rhs,itnlim, ...
-                                      zeros(size(rhs)),atol, ...
-                                               pdDDD3);
-            clear pc
+            PrecondOption = 1; % try hsl_mi28 initially
         else
-            precon = false;
-            [dy,itnm,normr,flag] = preconjgrad(mat_cg_handle,rhs,itnlim, ...
-                                      zeros(size(rhs)),atol,speye(m));
-            pdDDD3 = [];
+            PrecondOption = 3;
         end
-        if flag~=0
-            fprintf('CG failed to converge to sufficient accuracy\n')
-            keyboard
-        end
+        
+        flag = 1; extras.CGSuccess(PDitns) = 1;
 
+        while flag ~= 0
+            switch PrecondOption
+              case 1 % hsl_mi28
+                try
+                    pdDDD3 = ne_hsl_mi28(pdMat,H);
+                catch
+                    PrecondOption = PrecondOption + 1;
+                    continue
+                end
+              case 2
+                pdDDD3 = diag_pre_cg(pdMat,D,d2);
+              case 3
+                pdDDD3 = speye(m);
+              case 4
+                extras.CGSuccess(PDitns) = 0;
+                fprintf('\n\nCG failed to converge to sufficient accuracy\n')
+                fprintf('tol = %d\n\n',atol)
+                break
+            end
+            [dy,itnm,normr,flag] = preconjgrad(mat_cg_handle,rhs,itnlim, ...
+                                               zeros(size(rhs)),atol, ...
+                                               pdDDD3);
+            PrecondOption = PrecondOption + 1;
+        end
+        extras.CGPreconditioner = PrecondOption - 1;
+
+        
 
         atolold = atol;
         r3ratio = normr(itnm+1)/fmerit; 
@@ -1680,6 +1687,28 @@ function [cL,cU,center,Cinf,Cinf0] = ...
 % End private function pdxxxresid2
 %-----------------------------------------------------------------------
 
+function pre = ne_hsl_mi28(pdMat,H);
+% forms the hsl_mi28 incomplete choseky factorization for the
+% normal equations
+    S = sparse(pdMat*(diag(H) * pdMat'));
+    pc = hsl_mi28_precond(S);
+    pre = @(x) pc.apply(x);
+%--------------------------------------
+% End private function diag_pre_cg
+%--------------------------------------
+
+function pre = diag_pre_cg(pdMat,D,d2);
+% forms the diagonal preconditioner for the normal equations
+AD     = pdMat*diag(sparse(D));
+AD     = AD.^2;
+wD     = sum(AD,2);          % sparse
+wD     = full(wD) + d2.^2;   % dense
+pdDDD3 = 1./wD;  % Cast the vector into a diagonal operator
+pre = @(x)(pdDDD3.*x);
+
+%--------------------------------------
+% End private function diag_pre_cg
+%--------------------------------------
   
 function step = pdxxxstep( x,dx )
 
