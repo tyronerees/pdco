@@ -1809,7 +1809,6 @@ function y = minres_preconditioner(x,pre)
         % MI30
         y = pre.pc.apply(x);
       case (3) 
-        %        keyboard
         y = pre.U\(pre.L\(pre.P*x));
       case (4) 
         y = pre.P\x;
