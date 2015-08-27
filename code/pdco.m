@@ -1773,7 +1773,17 @@ function pre = generate_pre(K,n,m,number)
         
       case 6
         % a more complicated block diagonal preconditioner
-        
+        d = diag(K(one,one));
+        di = 1.0./d;
+        di(d==0) = 1; % set di to be the (pseudo)inverse of d
+
+        pre.A = @(x) x.*di;
+        %        keyboard
+        try
+            pre.SD = ne_hsl_mi28(K(two,one),di);
+        catch
+            pre.SD = diag_pre_cg(K(two,one),di,0.0);
+        end
     end
 end 
 
@@ -1806,6 +1816,9 @@ function y = minres_preconditioner(x,pre)
       case (5)
         y(one) = pre.A \x(one);
         y(two) = pre.SD\x(two);
+      case (6)
+        y(one) = pre.A( x(one) );
+        y(two) = pre.SD( x(two) );
     end
     
 end
@@ -1838,6 +1851,7 @@ function [x,its,normr,data] = krylov_solve(A,b,n,m,tol,maxits,krylov_method,prem
                                     tol, maxits, 0);
         data.resvec = resvec;
         normr = resvec(its);
+
       case 3 % Matlab's minres 
         predata = generate_pre(-A,n,m,premeth);
         indef_pre = @(x) minres_preconditioner(x,predata);
