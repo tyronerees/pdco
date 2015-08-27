@@ -919,15 +919,6 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
           
           derr = dy_exact - dy;
           
-% $$$           Bderr = pdMat*derr;
-% $$$           KBderr = Bderr;
-% $$$           %      extras.DualErrorN(PDitns) = sqrt(-Bderr'*(K(one,one)\Bderr));
-% $$$           for i = 1:n
-% $$$               if abs(K(i,i)) > 1e-30
-% $$$                   KBderr(i) = -Bderr(i)*(D);
-% $$$               end
-% $$$           end
-
           KBderr = AD'*derr;
 
           extras.DualErrorN(PDitns) = sqrt(KBderr'*KBderr);
