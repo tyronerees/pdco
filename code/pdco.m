@@ -1412,6 +1412,7 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
       keyboard
     end
   end
+end
 %-----------------------------------------------------------------------
 % End function pdco.m
 %-----------------------------------------------------------------------
@@ -1450,6 +1451,7 @@ function [low,upp,fix,zlo,zup] = pdxxxbounds( bl,bu, PriLev )
     fprintf('\n  [0, bu]  [bl,  0]  excluding fixed variables')
     fprintf('\n %8g %9g', length(zlo), length(zup))
   end
+end
 %-----------------------------------------------------------------------
 % End private function pdxxxbounds
 %-----------------------------------------------------------------------
@@ -1483,7 +1485,7 @@ function pdxxxdistrib( x,z )
   end
 
   disp(' ')
-  
+end
 %-----------------------------------------------------------------------
 % End private function pdxxxdistrib
 %-----------------------------------------------------------------------
@@ -1541,7 +1543,7 @@ function y = pdxxxlsmrmat( mode, m, n, x, pdMat, Method, ...
 %-----------------------------------------------------------------------
 % End private function pdxxxlsmrmat
 %-----------------------------------------------------------------------
-
+end
 
 function y = pdxxxminresmat( m, n, x, pdMat, Method, H, d2 )
 
@@ -1565,7 +1567,7 @@ function y = pdxxxminresmat( m, n, x, pdMat, Method, H, d2 )
 %-----------------------------------------------------------------------
 % End private function pdxxxminresmat
 %-----------------------------------------------------------------------
-
+end
 
 function y = pdxxxmat( pdMat, mode, m, n, x )
 
@@ -1591,7 +1593,7 @@ function y = pdxxxmat( pdMat, mode, m, n, x )
 %-----------------------------------------------------------------------
 % End private function pdxxxmat
 %-----------------------------------------------------------------------
-
+end
 
 function fmerit = pdxxxmerit( low,upp,r1,r2,rL,rU,cL,cU )
 
@@ -1605,10 +1607,10 @@ function fmerit = pdxxxmerit( low,upp,r1,r2,rL,rU,cL,cU )
        norm(cL(low))
        norm(cU(upp))];
   fmerit = norm(f);
+end
 %-----------------------------------------------------------------------
 % End private function pdxxxmerit
 %-----------------------------------------------------------------------
-
 
 function [r1,r2,rL,rU,Pinf,Dinf] =    ...
       pdxxxresid1( pdMat,fix,low,upp, ...
@@ -1639,6 +1641,8 @@ function [r1,r2,rL,rU,Pinf,Dinf] =    ...
   Dinf    =      norm(r2,inf);
   Pinf    = max( Pinf, 1e-99 );
   Dinf    = max( Dinf, 1e-99 );
+  
+end
 %-----------------------------------------------------------------------
 % End private function pdxxxresid1
 %-----------------------------------------------------------------------
@@ -1673,6 +1677,8 @@ function [cL,cU,center,Cinf,Cinf0] = ...
     Cinf0  = 0;
     center = 1;
   end
+  
+end
 %-----------------------------------------------------------------------
 % End private function pdxxxresid2
 %-----------------------------------------------------------------------
@@ -1683,6 +1689,8 @@ function pre = ne_hsl_mi28(pdMat,H);
     S = sparse(pdMat*(diag(H) * pdMat'));
     pc = hsl_mi28_precond(S);
     pre = @(x) pc.apply(x);
+    
+end
 %--------------------------------------
 % End private function diag_pre_cg
 %--------------------------------------
@@ -1696,6 +1704,7 @@ wD     = full(wD) + d2.^2;   % dense
 pdDDD3 = 1./wD;  % Cast the vector into a diagonal operator
 pre = @(x)(pdDDD3.*x);
 
+end
 %--------------------------------------
 % End private function diag_pre_cg
 %--------------------------------------
@@ -1711,57 +1720,7 @@ function step = pdxxxstep( x,dx )
     steps  = x(blocking) ./ (- dx(blocking));
     step   = min( steps );
   end
+end
 %-----------------------------------------------------------------------
 % End private function pdxxxstep
 %-----------------------------------------------------------------------
-
-
-%function [istop,atol,outfo] = pdxxxstop( istop,atol,arnorm,itn, ...
-%                                         iatolmin,ir3norm )
-%%-------------------------------------------------------------------
-%% SPECIAL TEST THAT DEPENDS ON pdco.m.
-%% pdMat in pdco   is  iw in lsqr.
-%% dy              is  x
-%% We allow for diagonal preconditioning in pdDDD3.
-%%-------------------------------------------------------------------
-%
-%% This code gets input from lsqr (atol,arnorm,istop,itn)
-%% and based on this data plus (iatolmin,ir3norm) adjusts (istop,atol).
-%
-%% 12 Feb 2001: atol can now be reduced and iterations continued
-%%              if necessary.  outfo is a new
-%%              problem-dependent parameter for such purposes.
-%%              In this version they are specialized for pdco.m.
-%% 23 Apr 2008: New function pdxxxstop handles adjusting atol inside lsqr.
-%    
-%
-%  if istop > 0
-%    r3new     = arnorm;
-%    r3ratio   = r3new / ir3norm;
-%    atolold   = atol;
-%    atolnew   = atol;
-%         
-%    if atol > iatolmin
-%      if     r3ratio <= 0.1     % dy seems good
-%       % Relax
-%      elseif r3ratio <= 0.5     % Accept dy but make next one more accurate.
-%       atolnew = atolnew * 0.1;
-%      else                      % Recompute dy more accurately
-%       fprintf('\n                                ')
-%       fprintf('                                ')
-%       fprintf(' %5.1f%7g%7.3f', log10(atolold), itn, r3ratio)
-%       atol    = atol * 0.1;
-%       atolnew = atol;
-%       istop   = 0;
-%      end
-%    end
-%
-%    outfo.atolold = atolold;
-%    outfo.atolnew = atolnew;
-%    outfo.r3ratio = r3ratio;
-%  else
-%    outfo = 0;
-%  end
-%%-----------------------------------------------------------------------
-%% End private function pdxxxstop
-%%-----------------------------------------------------------------------
