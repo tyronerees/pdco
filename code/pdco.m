@@ -954,7 +954,7 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
               vh(ih==k & ih~=jh) = 0;
               vh(jh==k & ih~=jh) = 0;
           end 
-          H = sparse(ih,jh,vh); 
+          H = sparse(ih,jh,vh,n,n); 
       end 
            
       if nfix==0
