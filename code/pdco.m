@@ -1014,7 +1014,12 @@ function [x,y,z,inform,PDitns,CGitns,time,CGitnsvec,extras] = ...
         case 23
           % use a krylov method on the indefinite system
           [sqdsoln,itnm,normr,solve_extras] = ...
-              krylov_solve(K,rhs,n,m,atol,itnlim,krylov_method,premeth);
+              krylov_solve(K,rhs,n,m,atol,itnlim,krylov_method, ...
+                           premeth);
+          if sum(isnan(sqdsoln))
+              fprintf('\n NaN in solution....abort\n')
+              break
+          end
           if exist('solve_extras.denom')
               fprintf('denom = %f',solve_extras.denom)
           end
