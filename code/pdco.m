@@ -1782,9 +1782,9 @@ function pre = generate_pre(K,n,m,number)
         pre.A = @(x) x.*di;
         %        keyboard
         try
-            pre.SD = ne_hsl_mi28(K(two,one),di);
+            pre.SD = ne_hsl_mi28(K(two,one),sqrt(di));
         catch
-            pre.SD = diag_pre_cg(K(two,one),di,0.0);
+            pre.SD = diag_pre_cg(K(two,one),sqrt(di),0.0);
         end
     end
 end 
