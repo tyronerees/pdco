@@ -1929,7 +1929,7 @@ function [x,its,normr,data] = krylov_solve(A,b,n,m,tol,maxits,krylov_method,prem
             bicgstab(-A,-b,tol,maxits,indef_pre);
         if flag ~= 0
             fprintf('\n\n**  Error, flag = %d **\n', flag)
-            keyboard    
+            data.pass = 0;
         end
       case 10 
         % a full-blown constraint preconditioner...
