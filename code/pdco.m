@@ -1830,7 +1830,8 @@ end
 
 function [x,its,normr,data] = krylov_solve(A,b,n,m,tol,maxits,krylov_method,premeth)
 % Pick a krylov method....
-    
+
+    data.pass = 1;
     switch krylov_method
       case 1 % Saunders' MINRES implementation
         damp = 0;
@@ -1848,8 +1849,11 @@ function [x,its,normr,data] = krylov_solve(A,b,n,m,tol,maxits,krylov_method,prem
       case 2 % My MINRES 
         predata = generate_pre(-A,n,m,premeth);
         indef_pre = @(x) minres_preconditioner(x,predata);
-        [x, its, resvec] = minres_t(-A,-b,indef_pre,zeros(size(b)),...
+        [x, its, resvec, flag] = minres_t(-A,-b,indef_pre,zeros(size(b)),...
                                     tol, maxits, 0);
+        if flag
+            data.pass = 0;
+        end
         data.resvec = resvec;
         normr = resvec(its);
 
@@ -1862,6 +1866,7 @@ function [x,its,normr,data] = krylov_solve(A,b,n,m,tol,maxits,krylov_method,prem
         cd(here)
         if flag > 0
             fprintf('\n   MINRES failed, flag = %3d \n ',flag);
+            data.pass = 0;
             keyboard
         end
       case 4 % my GMRES on the indefinite system
