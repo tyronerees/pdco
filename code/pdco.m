@@ -1867,7 +1867,6 @@ function [x,its,normr,data] = krylov_solve(A,b,n,m,tol,maxits,krylov_method,prem
         if flag > 0
             fprintf('\n   MINRES failed, flag = %3d \n ',flag);
             data.pass = 0;
-            keyboard
         end
       case 4 % my GMRES on the indefinite system
         predata = generate_pre(-A,n,m,premeth);
