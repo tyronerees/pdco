@@ -1784,8 +1784,12 @@ function pre = generate_pre(K,n,m,number)
         try
             pre.SD = ne_hsl_mi28(K(two,one),sqrt(di));
         catch
+	    fprintf('\n*~*~* ERROR *~*~*\n')
+	    fprintf(' HSL_MI28 failed\n')
+	    fprintf('~~~~~~~~~~~~~~~~~\n')
             pre.SD = diag_pre_cg(K(two,one),sqrt(di),0.0);
         end
+
     end
 end 
 
