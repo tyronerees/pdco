@@ -1688,7 +1688,9 @@ end
 function pre = ne_hsl_mi28(pdMat,H);
 % forms the hsl_mi28 incomplete choseky factorization for the
 % normal equations
-    S = sparse(pdMat*(diag(H) * pdMat'));
+    AD = pdMat*diag(H);
+    S = sparse(AD*AD');
+    %    S = sparse(pdMat*(diag(H) * pdMat'));
     pc = hsl_mi28_precond(S);
     pre = @(x) pc.apply(x);
     
@@ -1703,7 +1705,8 @@ AD     = pdMat*diag(sparse(D));
 AD     = AD.^2;
 wD     = sum(AD,2);          % sparse
 wD     = full(wD) + d2.^2;   % dense
-pdDDD3 = 1./wD;  % Cast the vector into a diagonal operator
+wD(abs(wD) < eps) = 1.0;
+pdDDD3 = 1.0./wD;  % Cast the vector into a diagonal operator
 pre = @(x)(pdDDD3.*x);
 
 end
@@ -1777,7 +1780,7 @@ function pre = generate_pre(K,n,m,number)
         % a more complicated block diagonal preconditioner
         d = diag(K(one,one));
         di = 1.0./d;
-        di(d==0) = 1; % set di to be the (pseudo)inverse of d
+        di(abs(d) < eps) = 1; % set di to be the (pseudo)inverse of d
 
         pre.A = @(x) x.*di;
         %        keyboard
@@ -1789,6 +1792,15 @@ function pre = generate_pre(K,n,m,number)
 	    fprintf('~~~~~~~~~~~~~~~~~\n')
             pre.SD = diag_pre_cg(K(two,one),sqrt(di),0.0);
         end
+      case 7
+        % as case 6, but block diagonal
+        d = diag(K(one,one));  
+        di = 1.0./d;
+        di(abs(d) < eps) = 1; % set di to be the (pseudo)inverse of d
+
+        pre.A = @(x) x.*di;
+	
+	pre.SD = diag_pre_cg(K(two,one),sqrt(di),0.0);
 
     end
 end 
@@ -1821,9 +1833,13 @@ function y = minres_preconditioner(x,pre)
       case (5)
         y(one) = pre.A \x(one);
         y(two) = pre.SD\x(two);
-      case (6)
+      case {6,7}
         y(one) = pre.A( x(one) );
         y(two) = pre.SD( x(two) );
+      case default
+        fprintf(['Error: unsupported preconditioner type for ' ...
+                 'minres_preconditioner\n'])
+        keyboard
     end
     
 end
@@ -1855,9 +1871,16 @@ function [x,its,normr,data] = krylov_solve(A,b,n,m,tol,maxits,krylov_method,prem
         indef_pre = @(x) minres_preconditioner(x,predata);
         [x, its, resvec, flag] = minres_t(-A,-b,indef_pre,zeros(size(b)),...
                                     tol, maxits, 0);
+        %        test_conditioning;
+        %keyboard
         if flag
             data.pass = 0;
+            %	    test_conditioning;
+%            keyboard
         end
+% $$$         if (premeth==7 )
+% $$$            keyboard 
+% $$$         end
         data.resvec = resvec;
         normr = resvec(its);
 
